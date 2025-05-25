@@ -55,6 +55,7 @@ from .usermanagement import user_login_required
 from .cw_babel import get_available_translations, get_available_locale, get_user_locale_language
 from . import debug_info
 from .string_helper import strip_whitespaces
+from .apikey_auth import generate_api_key
 
 log = logger.create()
 
@@ -644,6 +645,9 @@ def load_dialogtexts(element_id):
     elif element_id == "btnfullsync":
         texts["main"] = _("Are you sure you want delete Calibre-Web's sync database "
                           "to force a full sync with your Kobo Reader?")
+    elif element_id == "regenerate_api_key":
+        texts["main"] = _('Are you sure you want to regenerate the API Key? '
+                          'This will invalidate your existing API Key.')
     return json.dumps(texts)
 
 
@@ -1839,6 +1843,9 @@ def _configuration_update_helper():
 
         _config_int(to_save, "config_updatechannel")
 
+        # API Key configuration
+        _config_checkbox(to_save, "config_allow_api_key_login")
+
         # Reverse proxy login configuration
         _config_checkbox(to_save, "config_allow_reverse_proxy_header_login")
         _config_string(to_save, "config_reverse_proxy_login_header_name")
@@ -1943,6 +1950,7 @@ def _handle_new_user(to_save, content, languages, translations, kobo_support):
             log.info("Missing entries on new user")
             raise Exception(_("Oops! Please complete all fields."))
         content.password = generate_password_hash(helper.valid_password(to_save.get("password", "")))
+        content.api_key = generate_api_key()
         content.email = check_email(to_save["email"])
         # Query username, if not existing, change
         content.name = check_username(to_save["name"])

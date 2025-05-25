@@ -24,6 +24,35 @@
           <input type="password" class="form-control" name="password" id="password" data-lang="{{ current_user.locale }}" data-verify="{{ config.config_password_policy }}" {% if config.config_password_policy %} data-min={{ config.config_password_min_length }} data-word={{ config.config_password_character }} data-special={{ config.config_password_special }} data-upper={{ config.config_password_upper }} data-lower={{ config.config_password_lower }} data-number={{ config.config_password_number }}{% endif %} value="" autocomplete="off">
         </div>
     {% endif %}
+    {% if config.config_allow_api_key_login %}
+    <div class="form-group">
+      <label for="api_key">{{_('API Key')}}</label>
+      <div class="input-group">
+        <input type="text" class="form-control" name="api_key" id="api_key" value="{{ content.api_key if content.api_key != None }}" readonly autocomplete="off">
+        <span class="input-group-btn">
+          <a class="btn btn-default" id="regenerate_api_key" role="button">{{_('Generate')}}</a>
+          <button class="btn btn-default" type="button" id="copy_api_key" title="{{_('Copy to clipboard')}}"><span class="glyphicon glyphicon-copy"></span></button>
+        </span>
+      </div>
+    </div>
+    <script>
+      document.addEventListener('DOMContentLoaded', function() {
+        var copyBtn = document.getElementById('copy_api_key');
+        if (copyBtn) {
+          copyBtn.addEventListener('click', function() {
+            var apiKeyInput = document.getElementById('api_key');
+            apiKeyInput.select();
+            apiKeyInput.setSelectionRange(0, 99999); // For mobile devices
+            document.execCommand('copy');
+            copyBtn.innerHTML = '<span class="glyphicon glyphicon-ok"></span>';
+            setTimeout(function() {
+              copyBtn.innerHTML = '<span class="glyphicon glyphicon-copy"></span>';
+            }, 1500);
+          });
+        }
+      });
+    </script>
+    {% endif %}
     <div class="form-group">
       <label for="kindle_mail">{{_('Send to eReader Email Address. Use comma to separate emails for multiple eReaders')}}</label>
       <input type="email" class="form-control" name="kindle_mail" id="kindle_mail" value="{{ content.kindle_mail if content.kindle_mail != None }}">
@@ -169,6 +198,7 @@
 {% endblock %}
 {% block modal %}
 {{ restrict_modal() }}
+{{ change_confirm_modal() }}
 {{ delete_confirm_modal() }}
 {% endblock %}
 {% block js %}

@@ -244,7 +244,8 @@ class User(UserBase, Base):
     email = Column(String(120), unique=True, default="")
     role = Column(SmallInteger, default=constants.ROLE_USER)
     password = Column(String)
-    kindle_mail = Column(String(120), default="")
+    api_key = Column(String(48), unique=True, default="")
+    kindle_mail = Column(String(128), default="")
     shelf = relationship('Shelf', backref='user', lazy='dynamic', order_by='Shelf.name')
     downloads = relationship('Downloads', backref='user', lazy='dynamic')
     locale = Column(String(2), default="en")
@@ -600,6 +601,16 @@ def migrate_user_session_table(engine, _session):
             conn.execute(text("ALTER TABLE user_session ADD column 'expiry' Integer"))
             trans.commit()
 
+def migrate_user_api_key(engine, _session):
+    try:
+        _session.query(exists().where(User.api_key)).scalar()
+        _session.commit()
+    except exc.OperationalError:  # Database is not compatible, some columns are missing
+        with engine.connect() as conn:
+            trans = conn.begin()
+            conn.execute(text("ALTER TABLE user ADD column 'api_key' String"))
+            conn.execute(text("UPDATE user SET api_key = ''"))  # Set empty API keys for existing users
+            trans.commit()
 
 # Migrate database to current version, has to be updated after every database change. Currently migration from
 # maybe 4/5 versions back to current should work.
@@ -609,6 +620,7 @@ def migrate_Database(_session):
     add_missing_tables(engine, _session)
     migrate_registration_table(engine, _session)
     migrate_user_session_table(engine, _session)
+    migrate_user_api_key(engine, _session)
 
 
 def clean_database(_session):
@@ -728,7 +740,6 @@ def password_change(user_credentials=None):
         else:
             print("Username '{}' not valid, can't change password".format(username))
             sys.exit(3)
-
 
 def get_new_session_instance():
     new_engine = create_engine('sqlite:///{0}'.format(app_DB_path), echo=False)

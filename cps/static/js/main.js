@@ -692,6 +692,30 @@ $(function() {
         );
     });
 
+    $("#regenerate_api_key").click(function() {
+        confirmDialog(
+            "regenerate_api_key",
+            "GeneralChangeModal",
+            0,
+            function() {
+                $.ajax({
+                    method:"post",
+                    contentType: "application/json; charset=utf-8",
+                    dataType: "json",
+                    url: getPath() + "/apikey_auth/ajax/regenerate_api_key",
+                    success: function success(data) {
+                        if (data.success) {
+                            $("#api_key").val(data.api_key);
+                            handle_response(data.result);
+                        } else {
+                            handle_response(data.result);
+                        }
+                    }
+                });
+            }
+        );
+    });
+
     $("#user_submit").click(function() {
         this.closest("form").submit();
     });

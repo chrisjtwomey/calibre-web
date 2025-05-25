@@ -86,6 +86,12 @@ def requires_basic_auth_if_no_ano(f):
 def login_required_if_no_ano(func):
     @wraps(func)
     def decorated_view(*args, **kwargs):
+        if config.config_allow_api_key_login:
+            user = load_user_from_api_key(request)
+            if user:
+                g.flask_httpauth_user = user
+                return func(*args, **kwargs)
+            g.flask_httpauth_user = None
         if config.config_allow_reverse_proxy_header_login:
             user = load_user_from_reverse_proxy_header(request)
             if user:
@@ -102,6 +108,12 @@ def login_required_if_no_ano(func):
 def user_login_required(func):
     @wraps(func)
     def decorated_view(*args, **kwargs):
+        if config.config_allow_api_key_login:
+            user = load_user_from_api_key(request)
+            if user:
+                g.flask_httpauth_user = user
+                return func(*args, **kwargs)
+            g.flask_httpauth_user = None
         if config.config_allow_reverse_proxy_header_login:
             user = load_user_from_reverse_proxy_header(request)
             if user:
@@ -122,6 +134,15 @@ def load_user_from_reverse_proxy_header(req):
             if user:
                 [limiter.limiter.storage.clear(k.key) for k in limiter.current_limits]
                 return user
+    return None
+
+def load_user_from_api_key(req):
+    api_key = req.headers.get('X-API-Key')
+    if api_key:
+        user = ub.session.query(ub.User).filter(ub.User.api_key == api_key).first()
+        if user:
+            [limiter.limiter.storage.clear(k.key) for k in limiter.current_limits]
+            return user
     return None
 
 
