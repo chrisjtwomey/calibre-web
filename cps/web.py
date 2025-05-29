@@ -911,6 +911,27 @@ def list_books():
     response.headers["Content-Type"] = "application/json; charset=utf-8"
     return response
 
+@web.route("/ajax/book/<int:book_id>")
+@user_login_required
+def get_book(book_id):
+    book = calibre_db.get_book(book_id)
+    if not book:
+        return "Book not found", 404
+
+    book.is_archived = calibre_db.session.query(ub.ArchivedBook).filter(
+        ub.ArchivedBook.book_id == book_id,
+        ub.ArchivedBook.user_id == current_user.id,
+        ub.ArchivedBook.is_archived == True
+    ).count() > 0
+
+    for lang_index in range(0, len(book.languages)):
+        book.languages[lang_index].language_name = isoLanguages.get_language_name(get_locale(), book.languages[
+            lang_index].lang_code)
+
+    js_list = json.dumps(book, cls=db.AlchemyEncoder)
+    response = make_response(js_list)
+    response.headers["Content-Type"] = "application/json; charset=utf-8"
+    return response
 
 @web.route("/ajax/table_settings", methods=['POST'])
 @user_login_required

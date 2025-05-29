@@ -482,22 +482,30 @@ class AlchemyEncoder(json.JSONEncoder):
                 try:
                     if isinstance(data, str):
                         data = data.replace("'", "\'")
+                    elif isinstance(data, datetime):
+                        data = data.strftime("%Y-%m-%dT%H:%M:%S+00:00")
                     elif isinstance(data, InstrumentedList):
-                        el = list()
-                        # ele = None
-                        for ele in data:
-                            if hasattr(ele, 'value'):       # converter for custom_column values
-                                el.append(str(ele.value))
-                            elif ele.get:
-                                el.append(ele.get())
-                            else:
-                                el.append(json.dumps(ele, cls=AlchemyEncoder))
-                        if field == 'authors':
-                            data = " & ".join(el)
+                        if field == 'identifiers':
+                            el = dict()
+                            for ele in data:
+                                el[ele.type] = ele.val
+                            data = el
                         else:
-                            data = ",".join(el)
-                        if data == '[]':
-                            data = ""
+                            el = list()
+                            # ele = None
+                            for ele in data:
+                                if hasattr(ele, 'value'):       # converter for custom_column values
+                                    el.append(str(ele.value))
+                                elif hasattr(ele, 'get'): 
+                                    el.append(ele.get())
+                                else:
+                                    el.append(json.dumps(ele, cls=AlchemyEncoder))
+                            if field == 'authors':
+                                data = " & ".join(el)
+                            else:
+                                data = ",".join(el)
+                            if data == '[]':
+                                data = ""
                     else:
                         json.dumps(data)
                     fields[field] = data
