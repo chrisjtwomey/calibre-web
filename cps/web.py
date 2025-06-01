@@ -1298,6 +1298,10 @@ def ajax_send_to_ereader(book_id, book_format):
         return Response(json.dumps(response), mimetype='application/json')
     
     book = calibre_db.get_book(book_id)
+    if not book:
+        response = [{'type': "danger", 'message': _("Book not found.")}]
+        return Response(json.dumps(response), mimetype='application/json')
+
     email_share_list = check_send_to_ereader(book)
     
     if current_user.kindle_mail:
