@@ -1289,6 +1289,30 @@ def send_to_ereader(book_id, book_format, convert):
         response = [{'type': "danger", 'message': _("Oops! Please update your profile with a valid eReader Email.")}]
     return Response(json.dumps(response), mimetype='application/json')
 
+@web.route('/ajax/send/<int:book_id>/<book_format>')
+@user_login_required
+@download_required
+def ajax_send_to_ereader(book_id, book_format):
+    if not config.get_mail_server_configured():
+        response = [{'type': "danger", 'message': _("Please configure the SMTP mail settings first...")}]
+        return Response(json.dumps(response), mimetype='application/json')
+    
+    book = calibre_db.get_book(book_id)
+    email_share_list = check_send_to_ereader(book)
+    
+    if current_user.kindle_mail:
+        result = send_mail(book_id, book_format, email_share_list[0]['format'], current_user.kindle_mail, config.get_book_path(),
+                           current_user.name)
+        if result is None:
+            ub.update_download(book_id, int(current_user.id))
+            response = [{'type': "success", 'message': _("Success! Book queued for sending to %(eReadermail)s",
+                                                       eReadermail=current_user.kindle_mail)}]
+        else:
+            response = [{'type': "danger", 'message': _("Oops! There was an error sending book: %(res)s", res=result)}]
+    else:
+        response = [{'type': "danger", 'message': _("Oops! Please update your profile with a valid eReader Email.")}]
+    return Response(json.dumps(response), mimetype='application/json')
+
 
 # ################################### Login Logout ##################################################################
 
